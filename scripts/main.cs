@@ -88,10 +88,6 @@ public partial class Main : Node
 	{
 		if (paused) return;
 		assemblyView.follow = AssemblyFollow.ButtonPressed && !paused;
-		UpdateVisualisers();
-		if (!display.shouldRender) return;
-		display.PushBuffer();
-		display.shouldRender = false;
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -106,22 +102,12 @@ public partial class Main : Node
 
 		if (waitCounter <= 0)
 		{
-			for (int i = 0; i < instructionsPerTick; i++) 
-			{
-				RunNextInstruction();
-
-				foreach (int breakpoint in assemblyView.GetBreakpointedLines())
-				{
-					if (breakpoint == assemblyView.GetExecutingLines()[0])
-					{
-						StartStop();
-						assemblyView.SetLineAsBreakpoint(breakpoint, false);
-						break;
-					}
-				}
-				if (paused) break;
-			}
+			for (int i = 0; i < instructionsPerTick; i++) RunNextInstruction();
 			waitCounter = (int)Math.Ceiling(100 / (double)instructionsPerSecond);
+			UpdateVisualisers();
+			if (!display.shouldRender) return;
+			display.PushBuffer();
+			display.shouldRender = false;
 		}
 	}
 
@@ -276,11 +262,10 @@ public partial class Main : Node
 	private void Step()
 	{
 		if (!paused) StartStop();
-		if (paused && bytecode != null) 
-		{
-			RunNextInstruction();
-			assemblyView.follow = true;
-		}
+		if (bytecode == null) return;
+		RunNextInstruction();
+		assemblyView.follow = true;
+		UpdateVisualisers();
 	}
 
 	private void Reset()
